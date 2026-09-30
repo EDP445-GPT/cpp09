@@ -1,0 +1,66 @@
+[0;34m==================================================[0m
+[0;32m📝 TEST: Standard subject example[0m
+👉 Input: 3 5 9 7 4
+💻 Output:
+Before:	3 5 9 7 4
+after:	3 4 5 7 9
+Time to process a range of 5 elements with std::vector : 10 us
+
+[0;34m==================================================[0m
+[0;32m📝 TEST: Odd number of elements[0m
+👉 Input: 23 4 99 12 7 45 18 2 88 31 10 56 3 77 15
+💻 Output:
+Before:	23 4 99 12 7 45 18 2 88 31 10 56 3 77 15
+after:	2 3 4 7 10 12 15 18 23 31 45 56 77 88 99
+Time to process a range of 15 elements with std::vector : 18 us
+
+[0;34m==================================================[0m
+[0;32m📝 TEST: Even number of elements[0m
+👉 Input: 10 2 8 4 6 1 9 3 14 12
+💻 Output:
+Before:	10 2 8 4 6 1 9 3 14 12
+after:	1 2 3 4 6 8 9 10 12 14
+Time to process a range of 10 elements with std::vector : 14 us
+
+[0;34m==================================================[0m
+[0;32m📝 TEST: Already sorted[0m
+👉 Input: 1 2 3 4 5 6 7 8 9 10 11 12
+💻 Output:
+Before:	1 2 3 4 5 6 7 8 9 10 11 12
+after:	1 2 3 4 5 6 7 8 9 10 11 12
+Time to process a range of 12 elements with std::vector : 15 us
+
+[0;34m==================================================[0m
+[0;32m📝 TEST: Reverse sorted[0m
+👉 Input: 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1
+💻 Output:
+Before:	15 14 13 12 11 10 9 8 7 6 5 4 3 2 1
+after:	1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+Time to process a range of 15 elements with std::vector : 19 us
+
+[0;34m==================================================[0m
+[0;32m📝 TEST: With duplicates[0m
+👉 Input: 4 2 8 2 4 9 1 9 1 4
+💻 Output:
+Before:	4 2 8 2 4 9 1 9 1 4
+after:	1 1 2 2 4 4 4 8 9 9
+Time to process a range of 10 elements with std::vector : 14 us
+
+[0;34m==================================================[0m
+[0;32m📝 TEST: Error test - Negative number[0m
+👉 Input: 5 8 2 -4 9
+💻 Output:
+
+[0;34m==================================================[0m
+[0;32m📝 TEST: Error test - Invalid character[0m
+👉 Input: 5 8 a 9 2
+💻 Output:
+
+[0;34m==================================================[0m
+[0;32m📝 TEST: 100 Random Numbers (Stress Test)[0m
+👉 Input: 100 randomly generated integers
+💻 Output:
+Before:	724 247 342 472 844 321 422 576 198 918 617 326 6 429 497 196 758 38 77 246 229 851 928 515 617 810 399 139 372 341 474 415 758 973 127 568 585 535 602 754 525 609 940 394 202 622 310 513 784 126 525 608 308 263 431 354 447 76 537 509 654 944 172 652 599 163 692 769 792 337 501 122 244 709 281 727 5 747 703 39 67 834 1000 390 246 111 309 18 671 714 259 760 390 830 712 287 934 73 912 632
+after:	5 6 18 38 39 67 73 76 77 111 122 126 127 139 163 172 196 198 202 229 244 246 246 247 259 263 281 287 308 309 310 321 326 337 341 342 354 372 390 390 394 399 415 422 429 431 447 472 474 497 501 509 513 515 525 525 535 537 568 576 585 599 602 608 609 617 617 622 632 652 654 671 692 703 709 712 714 724 727 747 754 758 758 760 769 784 792 810 830 834 844 851 912 918 928 934 940 944 973 1000
+Time to process a range of 100 elements with std::vector : 68 us
+

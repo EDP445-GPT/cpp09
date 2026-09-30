@@ -32,7 +32,7 @@ void RPN::evaluate_expression(std::string exp)
 	{
 		if (token.size() > 1)
 			throw std::runtime_error("must be either a single digit number or a operator!");
-		if (isdigit(token[0]))
+		if (std::isdigit(static_cast<unsigned char>(token[0])))
 			data.push(token[0] - '0');
 		else if(is_operator(token))
 		{
