@@ -113,7 +113,8 @@ void BitcoinExchange::parser(char *filename)
 			{
 				--it;
 			}
-d			std::cout << first << " => " << val << " = " << result << std::endl;
+			double result = val * it->second;
+			std::cout << first << " => " << val << " = " << result << std::endl;
 		}
 		catch (const std::exception &e)
 		{
