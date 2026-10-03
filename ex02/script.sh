@@ -1,75 +1,69 @@
 #!/bin/bash
 
-# Make sure this matches the name of your compiled executable
 EXEC="./PmergeMe"
 
-# Colors for terminal output
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
 if [ ! -f "$EXEC" ]; then
-    echo -e "${RED}Error: Executable $EXEC not found. Compile your project first!${NC}"
+    echo "Error: Executable $EXEC not found."
     exit 1
 fi
 
-# Function to run a specific test
-run_test() {
-    local test_name="$1"
-    shift
-    local args="$*"
+# Target ranges based on Ford-Johnson theoretical limits
+sizes=(2 3 4 5 10 21 100 1000 3000)
+
+# The absolute maximum comparisons allowed for each size
+declare -A max_cmp=(
+    [2]=1
+    [3]=3
+    [4]=5
+    [5]=7
+    [10]=22
+    [21]=66
+    [100]=534
+    [1000]=8977
+    [3000]=31521
+)
+
+echo -e "\n🚀 Starting Ford-Johnson Dual-Container Benchmark...\n"
+printf "%-9s | %-11s | %-9s | %-9s | %-11s | %-11s\n" "Elements" "Max Allowed" "Vec Cmp" "Deq Cmp" "Vec Status" "Deq Status"
+printf "%.0s-" {1..73}
+echo ""
+
+for size in "${sizes[@]}"; do
+    # Generate 'size' amount of unique random numbers between 1 and 1,000,000
+    args=$(shuf -i 1-1000000 -n "$size" | tr '\n' ' ')
     
-    echo -e "${BLUE}==================================================${NC}"
-    echo -e "${GREEN}📝 TEST: ${test_name}${NC}"
+    # Run the program and capture the output
+    output=$($EXEC $args 2>/dev/null)
     
-    # If the input is too long, truncate it for the display printout
-    if [ ${#args} -gt 100 ]; then
-        echo -e "👉 Input: ${args:0:100}... (truncated)"
+    # Extract the comparison counts for vector and deque separately
+    vec_cmp=$(echo "$output" | grep -i "number of comparaisons vector" | awk '{print $NF}')
+    deq_cmp=$(echo "$output" | grep -i "number of comparaisons deque" | awk '{print $NF}')
+    
+    # Check Vector status
+    if [ -z "$vec_cmp" ]; then
+        vec_cmp="ERR"
+        vec_status="❌"
     else
-        echo -e "👉 Input: $args"
+        if [ "$vec_cmp" -le "${max_cmp[$size]}" ]; then
+            vec_status="✅ PASS"
+        else
+            vec_status="⚠️ HIGH"
+        fi
+    fi
+
+    # Check Deque status
+    if [ -z "$deq_cmp" ]; then
+        deq_cmp="ERR"
+        deq_status="❌"
+    else
+        if [ "$deq_cmp" -le "${max_cmp[$size]}" ]; then
+            deq_status="✅ PASS"
+        else
+            deq_status="⚠️ HIGH"
+        fi
     fi
     
-    echo -e "💻 Output:"
-    $EXEC $args
-    echo ""
-}
-
-# 1. Standard Subject Example
-run_test "Standard subject example" 3 5 9 7 4
-
-# 2. Odd number of elements (leaves a leftover naturally)
-run_test "Odd number of elements" 23 4 99 12 7 45 18 2 88 31 10 56 3 77 15
-
-# 3. Even number of elements
-run_test "Even number of elements" 10 2 8 4 6 1 9 3 14 12
-
-# 4. Already sorted (Best case scenario)
-run_test "Already sorted" 1 2 3 4 5 6 7 8 9 10 11 12
-
-# 5. Reverse sorted (Worst case scenario)
-run_test "Reverse sorted" 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1
-
-# 6. Duplicates (Tests if your binary search handles == correctly)
-run_test "With duplicates" 4 2 8 2 4 9 1 9 1 4
-
-# 7. Error handling - Negative numbers
-run_test "Error test - Negative number" 5 8 2 -4 9
-
-# 8. Error handling - Invalid characters
-run_test "Error test - Invalid character" 5 8 a 9 2
-
-# 9. Stress test - 100 Random numbers
-echo -e "${BLUE}==================================================${NC}"
-echo -e "${GREEN}📝 TEST: 100 Random Numbers (Stress Test)${NC}"
-# Generate 100 random numbers between 1 and 1000
-RANDOM_INPUT=""
-for i in {1..100}; do
-    RANDOM_INPUT="$RANDOM_INPUT $((RANDOM % 1000 + 1)) "
+    # Print the row
+    printf "%-9s | %-11s | %-9s | %-9s | %-11s | %-11s\n" "$size" "${max_cmp[$size]}" "$vec_cmp" "$deq_cmp" "$vec_status" "$deq_status"
 done
-
-# We run it directly instead of through the function to avoid expanding $RANDOM_INPUT improperly
-echo -e "👉 Input: 100 randomly generated integers"
-echo -e "💻 Output:"
-$EXEC $RANDOM_INPUT
 echo ""

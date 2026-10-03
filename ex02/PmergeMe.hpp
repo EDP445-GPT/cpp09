@@ -8,13 +8,12 @@
 #include <ctime>
 #include <cstdlib>
 
-
+extern int g_cmp;
 class PmergeMe
 {
 	private :
 		std::vector<int> vect;
 		std::deque<int> deq;
-		size_t cmp;
 	public:
 		PmergeMe();
 		PmergeMe(const PmergeMe &obj);
