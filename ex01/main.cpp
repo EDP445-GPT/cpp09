@@ -3,15 +3,20 @@
 int main(int ac, char **av)
 {
 	if (ac != 2)
-		return (0);
+	{
+		std::cerr << "Error" << std::endl;
+		return (1);
+	}
 	try
 	{
-		RPN a;
-		a.evaluate_expression(av[1]);
-		std::cout << a.return_result() << std::endl;
+		RPN rpn;
+		rpn.evaluate_expression(av[1]);
+		std::cout << rpn.return_result() << std::endl;
 	}
-	catch(const std::exception& e)
+	catch (const std::exception &e)
 	{
-		std::cerr << e.what() << '\n';
+		std::cerr << e.what() << std::endl;
+		return (1);
 	}
+	return (0);
 }

@@ -2,119 +2,115 @@
 
 BitcoinExchange::BitcoinExchange() {}
 
-BitcoinExchange::BitcoinExchange(const BitcoinExchange &obj)
-{
-	data = obj.data;
-}
+BitcoinExchange::BitcoinExchange(const BitcoinExchange &obj) : data(obj.data) {}
 
 BitcoinExchange &BitcoinExchange::operator=(const BitcoinExchange &obj)
 {
-	if (this == &obj)
-		return (*this);
-	data = obj.data;
+	if (this != &obj)
+		data = obj.data;
 	return (*this);
 }
 
 BitcoinExchange::~BitcoinExchange() {}
 
-int is_number(const std::string &str)
+static void stripCR(std::string &line)
 {
-	for (std::size_t i = 0; i < str.length(); i++)
+	if (!line.empty() && line[line.size() - 1] == '\r')
+		line.erase(line.size() - 1);
+}
+
+bool BitcoinExchange::isValidDate(const std::string &date)
+{
+	if (date.size() != 10 || date[4] != '-' || date[7] != '-')
+		return (false);
+	for (std::size_t i = 0; i < date.size(); i++)
 	{
-		if (!std::isdigit(static_cast<unsigned char>(str[i])))
+		if (i == 4 || i == 7)
+			continue ;
+		if (!std::isdigit(static_cast<unsigned char>(date[i])))
 			return (false);
 	}
-	return (true);
-}
-
-bool parse_value(const std::string &str)
-{
-	int counter = 0;
-	
-	if (str.empty() || str == ".")
-		return false;
-
-	for (std::size_t i = 0; i < str.length(); i++)
-	{
-		if (i == 0 && (str[i] == '-' || str[i] == '+'))
-			continue;
-
-		if (str[i] == '.')
-		{
-			counter++;
-			if (counter > 1)
-				return false;
-			continue;
-		}
-
-		if (!std::isdigit(static_cast<unsigned char>(str[i])))
-			return false;
-	}
-	return true;
-}
-
-void check_date_value(std::string line, size_t pos)
-{
-	std::string first  = line.substr(0, (pos - 1));
-	std::string second  = line.substr(pos + 2);
+	int year = std::atoi(date.substr(0, 4).c_str());
+	int month = std::atoi(date.substr(5, 2).c_str());
+	int day = std::atoi(date.substr(8, 2).c_str());
 	int daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
-	if (first.size() != 10 || first[4] != '-' || first[7] != '-')
-		throw std::runtime_error("data error2");
-	std::size_t first_delimiter = first.find("-");
-	std::size_t second_delimiter = first.find("-", first_delimiter + 1);
-	std::string string_year = first.substr(0, first_delimiter);
-	std::string string_month = first.substr(first_delimiter + 1, second_delimiter - first_delimiter - 1);
-	std::string string_day = first.substr(second_delimiter + 1);
-	if (!is_number(string_year) || !is_number(string_month) || !(is_number(string_day)))
-		throw std::runtime_error("data error3");
-	int year = std::atoi(string_year.c_str()), month = std::atoi(string_month.c_str()), day = std::atoi(string_day.c_str());
-	if (!(month >= 1 && month <= 12))
-		throw std::runtime_error("data error4");
-	if (month == 2 && (year % 4 == 0 && ((year % 100 != 0) || (year % 400 == 0))))
-		daysInMonth[month - 1] = 29;
-	if (day <= 0 || day > daysInMonth[month - 1])
-		throw std::runtime_error("data error5");
-	if (second.size() == 0 || !parse_value(second))
-		throw std::runtime_error("data error5");
+	if (month < 1 || month > 12)
+		return (false);
+	if (month == 2 && (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)))
+		daysInMonth[1] = 29;
+	return (day >= 1 && day <= daysInMonth[month - 1]);
 }
 
-void BitcoinExchange::parser(char *filename)
+bool BitcoinExchange::isValidValue(const std::string &value)
 {
-	std::string line;
-	std::ifstream fptr(filename);
-	if (!fptr.is_open())
-		throw std::runtime_error("couldn't open file");
-	std::string first_line;
-	std::getline(fptr, first_line);
-	if (first_line != "date | value")
-		throw std::runtime_error("wrong first line");
-	while(getline (fptr, line))
+	std::size_t i = 0;
+	int digits = 0;
+	int dots = 0;
+
+	if (value.empty())
+		return (false);
+	if (value[0] == '-' || value[0] == '+')
+		i++;
+	for (; i < value.size(); i++)
 	{
-		try 
+		if (value[i] == '.')
+			dots++;
+		else if (std::isdigit(static_cast<unsigned char>(value[i])))
+			digits++;
+		else
+			return (false);
+	}
+	return (digits > 0 && dots <= 1);
+}
+
+void BitcoinExchange::processLine(const std::string &line) const
+{
+	std::size_t pos = line.find(" | ");
+	if (pos == std::string::npos)
+		throw std::runtime_error("Error: bad input => " + line);
+
+	std::string date = line.substr(0, pos);
+	std::string value = line.substr(pos + 3);
+	if (!isValidDate(date) || !isValidValue(value))
+		throw std::runtime_error("Error: bad input => " + line);
+
+	double val = std::strtod(value.c_str(), NULL);
+	if (val < 0)
+		throw std::runtime_error("Error: not a positive number.");
+	if (val > 1000)
+		throw std::runtime_error("Error: too large a number.");
+	std::map<std::string, double>::const_iterator it = data.lower_bound(date);
+	if (it == data.end() || it->first != date)
+	{
+		if (it == data.begin())
+			throw std::runtime_error("Error: date not found in database => " + date);
+		--it;
+	}
+	std::cout << date << " => " << val << " = " << val * it->second << std::endl;
+}
+
+void BitcoinExchange::parser(const std::string &filename)
+{
+	std::ifstream file(filename.c_str());
+	if (!file.is_open())
+		throw std::runtime_error("Error: could not open file.");
+
+	std::cout << std::setprecision(12);
+	std::string line;
+	bool firstLine = true;
+	while (std::getline(file, line))
+	{
+		stripCR(line);
+		if (firstLine)
 		{
-			std::size_t pos = line.find("|");
-			if (pos == std::string::npos)
-				throw std::runtime_error("Error: bad input => " + line);
-			check_date_value(line, pos);
-			std::string first = line.substr(0, (pos - 1));
-			std::string second = line.substr(pos + 2);
-			double val = std::atof(second.c_str());
-			if (val < 0)
-				throw std::runtime_error("Error: not a positive number.");
-			if (val > 1000)
-				throw std::runtime_error("Error: too large a number.");
-			std::map<std::string, double>::iterator it = data.lower_bound(first);
-			if (it == data.begin() && it->first != first)
-			{
-				throw std::runtime_error("Error: date not found in database => " + first);
-			}
-			if (it == data.end() || it->first != first)
-			{
-				--it;
-			}
-			double result = val * it->second;
-			std::cout << first << " => " << val << " = " << result << std::endl;
+			firstLine = false;
+			if (line == "date | value")
+				continue ;
+		}
+		try
+		{
+			processLine(line);
 		}
 		catch (const std::exception &e)
 		{
@@ -128,15 +124,21 @@ void BitcoinExchange::loadDatabase(const std::string &filename)
 	std::ifstream file(filename.c_str());
 	if (!file.is_open())
 		throw std::runtime_error("Error: could not open database file.");
+
 	std::string line;
 	std::getline(file, line);
 	while (std::getline(file, line))
 	{
-		std::size_t pos = line.find(",");
+		stripCR(line);
+		std::size_t pos = line.find(',');
 		if (pos == std::string::npos)
-			continue;
+			continue ;
 		std::string date = line.substr(0, pos);
 		std::string rate = line.substr(pos + 1);
-		data[date] = std::atof(rate.c_str());
+		if (!isValidDate(date) || !isValidValue(rate))
+			continue ;
+		data[date] = std::strtod(rate.c_str(), NULL);
 	}
+	if (data.empty())
+		throw std::runtime_error("Error: database is empty or invalid.");
 }

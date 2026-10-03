@@ -1,9 +1,9 @@
 #include "PmergeMe.hpp"
 
 template <typename T>
-void print_numbers(const T& cont)
+static void print_numbers(const T &cont)
 {
-	for (size_t i = 0; i < cont.size(); ++i)
+	for (std::size_t i = 0; i < cont.size(); ++i)
 	{
 		std::cout << cont[i];
 		if (i + 1 < cont.size())
@@ -14,32 +14,24 @@ void print_numbers(const T& cont)
 
 int main(int ac, char **av)
 {
-	PmergeMe a;
+	PmergeMe sorter;
+
 	try
 	{
-		a.parse_parameters(ac, av);
+		sorter.run(ac, av);
 	}
-	catch(const std::exception& e)
+	catch (const std::exception &e)
 	{
-		std::cerr << e.what() << '\n';
+		std::cerr << e.what() << std::endl;
 		return (1);
 	}
-	std::cout << "Before:\t";
-	print_numbers(a.get_vect());
-	std::clock_t vect_start = std::clock();
-	a.vect_sort();
-	std::cout << "number of comparaisons vector: " << g_cmp << std::endl;
-	std::clock_t vect_end = std::clock();
-	std::clock_t deq_start = std::clock();
-	a.deq_sort();
-	std::cout << "number of comparaisons deque: " << g_cmp << std::endl;
-	std::clock_t deq_end = std::clock();
-	std::cout << "after:\t";
-	print_numbers(a.get_vect());
-	double durationVec = 1000000.0 * (double)(vect_end - vect_start) / CLOCKS_PER_SEC;
-	std::cout << "Time to process a range of " << a.get_vect().size()
-				<< " elements with std::vector : " << durationVec << " us" << std::endl;
-	double durationDeque = 1000000.0 * (double)(deq_end - deq_start) / CLOCKS_PER_SEC;
-	std::cout << "Time to process a range of " << a.get_vect().size()
-	<< " elements with std::deque : " << durationDeque << " us" << std::endl;
+	std::cout << "Before: ";
+	print_numbers(sorter.get_unsorted());
+	std::cout << "After:  ";
+	print_numbers(sorter.get_vect());
+	std::cout << "Time to process a range of " << sorter.get_unsorted().size()
+		<< " elements with std::vector : " << sorter.get_vect_time() << " us" << std::endl;
+	std::cout << "Time to process a range of " << sorter.get_unsorted().size()
+		<< " elements with std::deque  : " << sorter.get_deq_time() << " us" << std::endl;
+	return (0);
 }

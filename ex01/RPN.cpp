@@ -1,74 +1,97 @@
 #include "RPN.hpp"
 
-
 RPN::RPN() {}
-RPN::RPN(const RPN &obj)
-{
-	data = obj.data;
-}
+
+RPN::RPN(const RPN &obj) : data(obj.data) {}
+
 RPN &RPN::operator=(const RPN &obj)
 {
-	if (this == &obj)
-		return (*this);
-	data = obj.data;
+	if (this != &obj)
+		data = obj.data;
 	return (*this);
 }
 
 RPN::~RPN() {}
 
-bool is_operator(const std::string &token)
+static bool is_operator(char c)
 {
-	if (token[0] == '+' || token[0] == '-' || token[0] == '/' || token[0] == '*')
-		return true;
-	return false;
+	return (c == '+' || c == '-' || c == '*' || c == '/');
 }
 
-void RPN::evaluate_expression(std::string exp)
+static long checked_add(long a, long b)
 {
-	std::stringstream ss(exp);
+	if ((b > 0 && a > LONG_MAX - b) || (b < 0 && a < LONG_MIN - b))
+		throw std::runtime_error("Error");
+	return (a + b);
+}
+
+static long checked_sub(long a, long b)
+{
+	if ((b < 0 && a > LONG_MAX + b) || (b > 0 && a < LONG_MIN + b))
+		throw std::runtime_error("Error");
+	return (a - b);
+}
+
+static long checked_mul(long a, long b)
+{
+	if (a > 0)
+	{
+		if ((b > 0 && a > LONG_MAX / b) || (b <= 0 && b < LONG_MIN / a))
+			throw std::runtime_error("Error");
+	}
+	else
+	{
+		if ((b > 0 && a < LONG_MIN / b) || (b <= 0 && a != 0 && b < LONG_MAX / a))
+			throw std::runtime_error("Error");
+	}
+	return (a * b);
+}
+
+static long checked_div(long a, long b)
+{
+	if (b == 0 || (a == LONG_MIN && b == -1))
+		throw std::runtime_error("Error");
+	return (a / b);
+}
+
+void RPN::evaluate_expression(const std::string &exp)
+{
+	std::istringstream ss(exp);
 	std::string token;
 
-	while(ss >> token)
+	data = std::stack<long>();
+	while (ss >> token)
 	{
-		if (token.size() > 1)
-			throw std::runtime_error("must be either a single digit number or a operator!");
+		if (token.size() != 1)
+			throw std::runtime_error("Error");
 		if (std::isdigit(static_cast<unsigned char>(token[0])))
 			data.push(token[0] - '0');
-		else if(is_operator(token))
+		else if (is_operator(token[0]))
 		{
 			if (data.size() < 2)
-				throw std::runtime_error("Error: not enough operands for operator");
-			int digit1, digit2;
-			digit1 = data.top();
+				throw std::runtime_error("Error");
+			long right = data.top();
 			data.pop();
-			digit2 = data.top();
+			long left = data.top();
 			data.pop();
-			switch (token[0]) {
-				case '+':
-					data.push(digit2 + digit1);
-					break;
-				case '-':
-					data.push(digit2 - digit1);
-					break;
-				case '*':
-					data.push(digit1 * digit2);
-					break;
-				case '/':
-					if (digit1 == 0) {
-						throw std::runtime_error("Error: Division by zero");
-					}
-					data.push(digit2 / digit1);
-					break;
+			switch (token[0])
+			{
+				case '+': data.push(checked_add(left, right)); break ;
+				case '-': data.push(checked_sub(left, right)); break ;
+				case '*': data.push(checked_mul(left, right)); break ;
+				case '/': data.push(checked_div(left, right)); break ;
 			}
 		}
 		else
-			throw std::runtime_error("not digit nor an operator");
+			throw std::runtime_error("Error");
 	}
 	if (data.size() != 1)
-		throw std::runtime_error("Error: not enough operations");
+		throw std::runtime_error("Error");
 }
 
-int RPN::return_result()
+long RPN::return_result() const
 {
+	if (data.empty())
+		throw std::runtime_error("Error");
 	return (data.top());
 }
